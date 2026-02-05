@@ -4,7 +4,7 @@
 ![MySQL](https://img.shields.io/badge/MySQL-5.7%2B-orange)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
-A lightweight (2Mb), fast Google PageSpeed 100, self-hosted knowledge base and community platform built with PHP and MySQL.
+A lightweight (2Mb), fast - Google PageSpeed 100, self-hosted knowledge base and community platform built with PHP and MySQL.
 
 
 
