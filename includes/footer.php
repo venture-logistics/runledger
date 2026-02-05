@@ -205,7 +205,7 @@ code {
       <!-- Right -->
       <div class="small text-muted">
         Powered by
-        <a target="_blank" href="https://runledger.org" class="text-decoration-none">
+        <a target="_blank" href="https://runledger.org/knowledge_document.php?doc=knowledge-ledger-manifesto" class="text-decoration-none">
           Ledger
         </a>
       </div>
