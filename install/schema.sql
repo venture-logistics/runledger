@@ -39,18 +39,26 @@ CREATE TABLE `forum_categories` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `forum_post_helpful` (
-  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-  `post_id` int(11) NOT NULL,
-  `user_id` bigint(20) unsigned NOT NULL,
+CREATE TABLE `forum_topics` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `category_id` int(11) NOT NULL,
+  `title` varchar(200) NOT NULL,
+  `slug` varchar(220) NOT NULL,
+  `created_by_user_id` int(11) DEFAULT NULL,
+  `created_by_name` varchar(120) DEFAULT NULL,
   `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `is_locked` tinyint(1) NOT NULL DEFAULT 0,
+  `is_deleted` tinyint(1) NOT NULL DEFAULT 0,
+  `is_pinned` tinyint(1) NOT NULL DEFAULT 0,
+  `pinned_at` datetime DEFAULT NULL,
+  `locked_at` datetime DEFAULT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uq_helpful_post_user` (`post_id`,`user_id`),
-  KEY `idx_helpful_post` (`post_id`),
-  KEY `idx_helpful_user` (`user_id`),
-  CONSTRAINT `fk_helpful_post` FOREIGN KEY (`post_id`) REFERENCES `forum_posts` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_helpful_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+  UNIQUE KEY `slug` (`slug`),
+  KEY `idx_forum_topics_cat_updated` (`category_id`,`updated_at`),
+  FULLTEXT KEY `ft_title` (`title`),
+  CONSTRAINT `fk_forum_topics_category` FOREIGN KEY (`category_id`) REFERENCES `forum_categories` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
@@ -72,26 +80,35 @@ CREATE TABLE `forum_posts` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `forum_topics` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `category_id` int(11) NOT NULL,
-  `title` varchar(200) NOT NULL,
-  `slug` varchar(220) NOT NULL,
-  `created_by_user_id` int(11) DEFAULT NULL,
-  `created_by_name` varchar(120) DEFAULT NULL,
-  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
-  `updated_at` datetime NOT NULL DEFAULT current_timestamp(),
-  `is_locked` tinyint(1) NOT NULL DEFAULT 0,
-  `is_deleted` tinyint(1) NOT NULL DEFAULT 0,
-  `is_pinned` tinyint(1) NOT NULL DEFAULT 0,
-  `pinned_at` datetime DEFAULT NULL,
-  `locked_at` datetime DEFAULT NULL,
+CREATE TABLE `users` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `role` enum('user','admin') NOT NULL DEFAULT 'user',
+  `forum_designation` enum('Member','Trusted Member','Expert','Contributor','Admin') DEFAULT 'Member',
+  `badge_class` varchar(30) DEFAULT 'text-bg-secondary',
+  `forum_about` varchar(240) DEFAULT NULL,
+  `background_perspective` varchar(80) DEFAULT NULL,
+  `name` varchar(120) NOT NULL,
+  `email` varchar(190) NOT NULL,
+  `password_hash` varchar(255) NOT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `slug` (`slug`),
-  KEY `idx_forum_topics_cat_updated` (`category_id`,`updated_at`),
-  FULLTEXT KEY `ft_title` (`title`),
-  CONSTRAINT `fk_forum_topics_category` FOREIGN KEY (`category_id`) REFERENCES `forum_categories` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+  UNIQUE KEY `uq_users_email` (`email`),
+  KEY `idx_users_role` (`role`)
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `forum_post_helpful` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `post_id` int(11) NOT NULL,
+  `user_id` bigint(20) unsigned NOT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_helpful_post_user` (`post_id`,`user_id`),
+  KEY `idx_helpful_post` (`post_id`),
+  KEY `idx_helpful_user` (`user_id`),
+  CONSTRAINT `fk_helpful_post` FOREIGN KEY (`post_id`) REFERENCES `forum_posts` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_helpful_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
@@ -220,23 +237,6 @@ CREATE TABLE `site_welcome` (
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `users` (
-  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-  `role` enum('user','admin') NOT NULL DEFAULT 'user',
-  `forum_designation` enum('Member','Trusted Member','Expert','Contributor','Admin') DEFAULT 'Member',
-  `badge_class` varchar(30) DEFAULT 'text-bg-secondary',
-  `forum_about` varchar(240) DEFAULT NULL,
-  `background_perspective` varchar(80) DEFAULT NULL,
-  `name` varchar(120) NOT NULL,
-  `email` varchar(190) NOT NULL,
-  `password_hash` varchar(255) NOT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uq_users_email` (`email`),
-  KEY `idx_users_role` (`role`)
-) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 

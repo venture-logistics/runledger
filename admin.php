@@ -2,7 +2,7 @@
 // admin.php — Forum Members Admin (members-only)
 // Assumes: header.php includes auth, mysqli $conn, Bootstrap 5
 
-define('LEDGER_VERSION', 'v1.2.0');
+define('LEDGER_VERSION', 'v1.2.1');
 
 if (session_status() !== PHP_SESSION_ACTIVE) {
     session_start();
