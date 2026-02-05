@@ -105,9 +105,9 @@ $installerDownloads = download_get_count($conn, 'installer');
             <div class="card-body">
               <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
                 <div>
-                  <div class="fw-semibold">Ledger Installer</div>
+                  <div class="fw-semibold">Ledger Installer (Beta)</div>
                   <div class="text-muted small mb-2">
-                    Local download · installer.zip · <?= (int) $installerDownloads ?> downloads
+                    Local download · installer.zip (200Mb) · <?= (int) $installerDownloads ?> downloads
                   </div>
                 </div>
 

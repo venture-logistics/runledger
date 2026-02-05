@@ -164,3 +164,38 @@ Developed by Venture Governance Ltd
 ## Version
 
 Check the admin panel for the latest installed version.
+
+---
+
+# Portable Ledger Server Stack (Beta)
+
+A fully portable, "zero-install" web server environment designed for testing and demonstrating the Ledger software without requiring XAMPP, WAMP, or local server installations.
+
+Download from [project website](https://runledger.org/download.php)
+
+## Overview
+This stack provides a pre-configured environment including:
+*   **Caddy Server**: Modern, fast web server with automatic configuration.
+*   **PHP (FastCGI)**: Lightweight PHP processing.
+*   **MariaDB**: Portable database instance with automated schema initialization.
+
+The `install.ps1` script automates the entire setup, including hosts file mapping for `ledger.test`, database creation, and service startup.
+
+## Quick Start
+1.  Download the repository to your local machine.
+2.  Right-click `install.ps1` and select **Run with PowerShell**.
+3.  If prompted for Administrator rights, select **Yes** (required to map `ledger.test` to your local hosts file).
+4.  Once the script finishes, it opens a new browser window at `http://ledger.test`.
+
+## Compatibility & Troubleshooting
+
+### Why it might not work on older computers
+This stack uses modern binaries and PowerShell automation that require specific Windows features. If the installer window closes immediately on your machine, check the following:
+
+#### 1. PowerShell Version (Requires 5.1+)
+Older versions of Windows (Windows 7/8) often ship with PowerShell 2.0 or 3.0. This script uses commands like `Test-NetConnection` and modern redirection syntax that do not exist in older versions.
+*   **Fix:** Install [Windows Management Framework 5.1]().
+
+### 2. Unblock in Properties
+
+Right click install.ps1 select properties and Security and tick/select "unblock"
