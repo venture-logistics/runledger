@@ -4,7 +4,9 @@
 ![MySQL](https://img.shields.io/badge/MySQL-5.7%2B-orange)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
-A lightweight, self-hosted knowledge base and community platform built with PHP and MySQL.
+A lightweight (2Mb), fast - Google PageSpeed 100, self-hosted knowledge base and community platform built with PHP and MySQL.
+
+
 
 ## Features
 
@@ -27,44 +29,16 @@ A lightweight, self-hosted knowledge base and community platform built with PHP 
 
 ### Quick Install
 
-1. Clone the repository:
-```bash
-git clone https://github.com/venture-logistics/runledger.git
-cd runledger
-```
+1. Access the installer:
+Navigate to `http://yoursite.com/install/index.php` and follow the setup wizard.
 
-2. Import the database schema:
-```bash
-mysql -u username -p database_name < install/schema.sql
-```
-
-3. Configure database connection:
-Edit `includes/db.php` with your database credentials.
-
-4. Set permissions:
-```bash
-chmod 755 backups/
-chmod 755 downloads/
-```
-
-5. Access the installer:
-Navigate to `http://yoursite.com/install.php` and follow the setup wizard.
+2. Delete or rename install folder
 
 ### Manual Installation
 
 If you prefer manual setup, create the database and import `install/schema.sql`, then configure `includes/db.php` with your database credentials.
 
 ## Configuration
-
-### Database Connection
-
-Edit `includes/db.php`:
-```php
-$host = 'localhost';
-$database = 'your_database';
-$username = 'your_username';
-$password = 'your_password';
-```
 
 ### Site Settings
 
@@ -81,21 +55,13 @@ Access admin panel at `/admin.php` to configure:
 
 1. Log in to admin panel
 2. Navigate to Updates section
-3. Click "Install Update"
-4. System automatically downloads, backs up, and applies updates
-
-### Manual Updates
-
-```bash
-cd /path/to/ledger
-git pull origin main
-```
-
-Then run database migrations via Admin > Updates > Run Migrations.
+3. If an update is available,
+4. Click "Install Update"
+5. System automatically downloads, backs up, and applies updates
 
 ## Database Migrations
 
-The system uses automatic migrations to keep your database schema up to date. Migrations run automatically during updates, or can be triggered manually from the admin panel.
+The system uses automatic migrations to keep your database schema up to date. Migrations run automatically during updates.
 
 Migration files are located in `install/migrations/` and are tracked in the `schema_migrations` table.
 
@@ -112,19 +78,20 @@ ledger/
 │   ├── schema.sql        # Database schema
 │   └── migrations/       # Migration files
 ├── backups/               # Automatic backups
-└── downloads/             # Download files
 ```
 
 ## Admin Panel
 
 Access the admin panel at `/admin.php` to manage:
 - Site settings
-- User accounts
+- Member Settings
 - Forum categories
 - Knowledge base categories
-- Menu items
+- Manage Documents
+- Menu Management
+- Document Quality
+- Database Management
 - System updates
-- Database migrations
 
 ## Security
 
@@ -136,10 +103,6 @@ Access the admin panel at `/admin.php` to manage:
 ## Backups
 
 Automatic backups are created before each update and stored in `/backups/` directory. Manual backups can be created by exporting the database:
-
-```bash
-mysqldump -u username -p database_name > backup.sql
-```
 
 ## Troubleshooting
 
