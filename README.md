@@ -171,6 +171,8 @@ Check the admin panel for the latest installed version.
 
 A fully portable, "zero-install" web server environment designed for testing and demonstrating the Ledger software without requiring XAMPP, WAMP, or local server installations.
 
+The full 200MB portable stack (MariaDB, PHP, Caddy) is hosted on our official site to ensure you get the latest pre-configured binaries.
+
 Download from [project website](https://runledger.org/download.php)
 
 ## Overview
@@ -198,4 +200,8 @@ Older versions of Windows (Windows 7/8) often ship with PowerShell 2.0 or 3.0. T
 
 ### 2. Unblock in Properties
 
+<<<<<<< HEAD
 Right click install.ps1 select properties and Security and tick/select "unblock"
+=======
+Right click install.ps1 select properties and Security and tick/select "unblock"
+>>>>>>> 0abb7ed90c8e534a08434212304cba3e02da5697
