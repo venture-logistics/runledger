@@ -53,7 +53,7 @@ $tagName = null; // Store the full tag name for version updates
 
 // Check for updates
 try {
-    $apiUrl = 'https://api.github.com/repos/venture-logistics/ledger/releases/latest';
+    $apiUrl = 'https://api.github.com/repos/venture-logistics/runledger/releases/latest';
 
     // Try curl first (most reliable)
     if (function_exists('curl_init')) {
@@ -118,7 +118,7 @@ try {
         $releaseNotes = $release['body'] ?? null;
 
         // Use tar.gz instead of zip (can extract with tar command, no unzip needed)
-        $downloadUrl = "https://codeload.github.com/venture-logistics/ledger/legacy.tar.gz/{$release['tag_name']}";
+        $downloadUrl = "https://codeload.github.com/venture-logistics/runledger/legacy.tar.gz/{$release['tag_name']}";
 
         // Compare versions
         $updateAvailable = version_compare($latestVersion, ltrim($currentVersion, 'v'), '>');
@@ -236,7 +236,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'insta
 
         @unlink($tempFile);
 
-        // Find extracted folder (GitHub creates venture-logistics-ledger-xxxxx)
+        // Find extracted folder (GitHub creates venture-logistics-runledger-xxxxx)
         $dirs = glob($extractDir . '/*', GLOB_ONLYDIR);
         if (empty($dirs)) {
             throw new Exception('Extraction failed - no folder found');
