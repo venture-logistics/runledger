@@ -269,11 +269,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'insta
         $migrationResults = run_migrations($conn);
 
         $message = 'Update installed! Backup: ' . basename($backupFile);
-        if (!empty($migrationResults['applied'])) {
-            $message .= ' | Migrations: ' . count($migrationResults['applied']);
-        }
 
-        flash_set('success', $message);
+        // Check for migration errors
+        if (!empty($migrationResults['errors'])) {
+            $message .= ' | MIGRATION ERRORS: ' . implode(', ', $migrationResults['errors']);
+            $message .= ' - Please run migrations manually from the Database Migrations section below.';
+            flash_set('warning', $message);
+        } elseif (!empty($migrationResults['applied'])) {
+            $message .= ' | Migrations applied: ' . count($migrationResults['applied']);
+            flash_set('success', $message);
+        } else {
+            flash_set('success', $message);
+        }
         header('Location: admin_updates.php');
         exit;
 
