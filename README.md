@@ -185,7 +185,7 @@ The `install.ps1` script automates the entire setup, including hosts file mappin
 1.  Download the repository to your local machine.
 2.  Right-click `install.ps1` and select **Run with PowerShell**.
 3.  If prompted for Administrator rights, select **Yes** (required to map `ledger.test` to your local hosts file).
-4.  Once the script finishes, visit `http://ledger.test` in your browser.
+4.  Once the script finishes, it opens a new browser window at `http://ledger.test`.
 
 ## Compatibility & Troubleshooting
 
