@@ -6,7 +6,7 @@
 
 A lightweight (2Mb), fast - Google PageSpeed 100, self-hosted knowledge base and community platform built with PHP and MySQL.
 
-
+Visit [project website](https://runledger.org/) for further details.
 
 ## Features
 
