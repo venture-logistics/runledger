@@ -18,6 +18,17 @@ Visit [project website](https://runledger.org/) for further details.
 - **Custom Menus**: Flexible navigation menu management
 - **Site Customization**: Customize branding, colors, and notices
 
+## The Engineering Philosophy
+
+RunLedger is built with a commitment to **performance, privacy, and efficiency**.
+
+In an era of bloated web frameworks and expensive cloud subscriptions, we take a different approach:
+*   **Hand-Coded Craftsmanship:** The application is hand-coded in raw PHP/HTML/CSS. There are no heavy dependencies, no complex build processes, and zero unnecessary code.
+*   **Minimal Footprint:** The entire application footprint (binaries excluded) is a tiny **1.6MB**. It is designed to be lightweight enough to run instantly from a USB stick.
+*   **Instant Performance:** This efficiency translates to a perfect **Google PageSpeed 100** score, ensuring an instant, sub-second experience for every user.
+
+We believe that robust, secure, and private software doesn't have to be slow or complicated.
+
 ## Requirements
 
 - PHP 8.3 or higher
@@ -204,4 +215,7 @@ Older versions of Windows (Windows 7/8) often ship with PowerShell 2.0 or 3.0. T
 Right click install.ps1 select properties and Security and tick/select "unblock"
 =======
 Right click install.ps1 select properties and Security and tick/select "unblock"
->>>>>>> 0abb7ed90c8e534a08434212304cba3e02da5697
+
+## Server Scripts
+
+More info on the server and the other features view our docs page - [Powershell Files](https://runledger.org/knowledge_document.php?doc=knowledge-powershell-files)
