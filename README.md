@@ -211,9 +211,6 @@ Older versions of Windows (Windows 7/8) often ship with PowerShell 2.0 or 3.0. T
 
 ### 2. Unblock in Properties
 
-<<<<<<< HEAD
-Right click install.ps1 select properties and Security and tick/select "unblock"
-=======
 Right click install.ps1 select properties and Security and tick/select "unblock"
 
 ## Server Scripts
