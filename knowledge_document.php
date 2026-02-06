@@ -8,17 +8,17 @@ require_once __DIR__ . '/includes/header.php';
 
 // ---- DB guard ----
 if (!isset($conn) || !($conn instanceof mysqli)) {
-  echo "<div class='container py-4'><div class='alert alert-danger mb-0'>DB connection not available.</div></div>";
-  require_once __DIR__ . '/includes/footer.php';
-  exit;
+    echo "<div class='container py-4'><div class='alert alert-danger mb-0'>DB connection not available.</div></div>";
+    require_once __DIR__ . '/includes/footer.php';
+    exit;
 }
 
 $docSlug = trim($_GET['doc'] ?? '');
 if ($docSlug === '') {
-  http_response_code(404);
-  echo "<div class='container py-4'><div class='alert alert-danger mb-0'>Document not found.</div></div>";
-  require_once __DIR__ . '/includes/footer.php';
-  exit;
+    http_response_code(404);
+    echo "<div class='container py-4'><div class='alert alert-danger mb-0'>Document not found.</div></div>";
+    require_once __DIR__ . '/includes/footer.php';
+    exit;
 }
 
 $userRating = 0;
@@ -44,9 +44,9 @@ $stmt = $conn->prepare("
 ");
 
 if (!$stmt) {
-  echo "<div class='container py-4'><div class='alert alert-danger mb-0'>Query prepare failed: " . h($conn->error) . "</div></div>";
-  require_once __DIR__ . '/includes/footer.php';
-  exit;
+    echo "<div class='container py-4'><div class='alert alert-danger mb-0'>Query prepare failed: " . h($conn->error) . "</div></div>";
+    require_once __DIR__ . '/includes/footer.php';
+    exit;
 }
 
 $stmt->bind_param("s", $docSlug);
@@ -56,26 +56,35 @@ $kbDoc = $res ? $res->fetch_assoc() : null;
 $stmt->close();
 
 if (!$kbDoc) {
-  http_response_code(404);
-  echo "<div class='container py-4'><div class='alert alert-danger mb-0'>Document not found.</div></div>";
-  require_once __DIR__ . '/includes/footer.php';
-  exit;
+    http_response_code(404);
+    echo "<div class='container py-4'><div class='alert alert-danger mb-0'>Document not found.</div></div>";
+    require_once __DIR__ . '/includes/footer.php';
+    exit;
 }
 
 $userFlagged = false;
 
 if (!empty($currentUser)) {
-  $uid = (int)$currentUser['id'];
-  $stmt = $conn->prepare("
+    $uid = (int) $currentUser['id'];
+    $stmt = $conn->prepare("
     SELECT 1
     FROM knowledge_flags
     WHERE document_id = ? AND user_id = ?
     LIMIT 1
   ");
-  $stmt->bind_param("ii", $kbDoc['id'], $uid);
-  $stmt->execute();
-  $userFlagged = (bool)$stmt->get_result()->fetch_row();
-  $stmt->close();
+    $stmt->bind_param("ii", $kbDoc['id'], $uid);
+    $stmt->execute();
+    $userFlagged = (bool) $stmt->get_result()->fetch_row();
+    $stmt->close();
+}
+
+
+// Check if user can edit (admin or expert)
+$canEdit = false;
+if (!empty($currentUser)) {
+    if ($currentUser['role'] === 'admin' || $currentUser['forum_designation'] === 'Expert') {
+        $canEdit = true;
+    }
 }
 
 $pageTitle = $kbDoc['title'] . " — Knowledge Base";
@@ -91,7 +100,15 @@ $pageTitle = $kbDoc['title'] . " — Knowledge Base";
           ← <?= h($kbDoc['category_name']) ?>
         </a>
 
-        <a class="btn btn-sm btn-outline-secondary" href="knowledge.php">All categories</a>
+        <div class="d-flex gap-2">
+          <?php if ($canEdit): ?>
+            <a class="btn btn-sm btn-outline-primary" 
+               href="admin_knowledge_document_edit.php?id=<?= (int) $kbDoc['id'] ?>">
+              Edit
+            </a>
+          <?php endif; ?>
+          <a class="btn btn-sm btn-outline-secondary" href="knowledge.php">All categories</a>
+        </div>
       </div>
 
       <div class="card shadow-sm" style="border-left:4px solid <?= h($kbDoc['accent_color'] ?? '#adb5bd') ?>;">
@@ -99,9 +116,9 @@ $pageTitle = $kbDoc['title'] . " — Knowledge Base";
           <h1 class="h4 mb-2"><?= h($kbDoc['title']) ?></h1>
 
           <div class="small text-muted mb-3">
-            <?= h(substr((string)$kbDoc['created_at'], 0, 10)) ?>
+            <?= h(substr((string) $kbDoc['created_at'], 0, 10)) ?>
             <?php if (!empty($kbDoc['updated_at'])): ?>
-              · Updated <?= h(substr((string)$kbDoc['updated_at'], 0, 10)) ?>
+              · Updated <?= h(substr((string) $kbDoc['updated_at'], 0, 10)) ?>
             <?php endif; ?>
           </div>
 
@@ -115,7 +132,7 @@ $pageTitle = $kbDoc['title'] . " — Knowledge Base";
             
             <?php if (!empty($currentUser)): ?>
               <form method="post" action="/rate_document.php" class="d-inline">
-                <input type="hidden" name="document_id" value="<?= (int)$kbDoc['id'] ?>">
+                <input type="hidden" name="document_id" value="<?= (int) $kbDoc['id'] ?>">
                 <input type="hidden" name="csrf_token" value="<?= h($_SESSION['csrf_token']) ?>">
             
                 <div class="rating-stars">
@@ -140,12 +157,12 @@ $pageTitle = $kbDoc['title'] . " — Knowledge Base";
             
              <div class="border-top pt-3 mt-3 d-flex justify-content-between align-items-center">
               <div class="small text-muted">
-                Rating: <?= h($kbDoc['avg_rating']) ?> / 5 (<?= (int)$kbDoc['rating_count'] ?>)
+                Rating: <?= h($kbDoc['avg_rating']) ?> / 5 (<?= (int) $kbDoc['rating_count'] ?>)
               </div>
               
                 <?php if (!empty($currentUser)): ?>
                   <form method="post" action="/flag_document.php" class="d-inline">
-                    <input type="hidden" name="document_id" value="<?= (int)$kbDoc['id'] ?>">
+                    <input type="hidden" name="document_id" value="<?= (int) $kbDoc['id'] ?>">
                     <input type="hidden" name="csrf_token" value="<?= h($_SESSION['csrf_token']) ?>">
                 
                     <button type="submit"

@@ -291,12 +291,12 @@ if (!empty($currentUser['id'])) {
 
         // Map designation to badge color
         $designationColors = [
-            'Admin'          => 'text-bg-dark',
-            'Expert'         => 'text-bg-danger',
-            'Moderator'      => 'text-bg-danger',
-            'Contributor'    => 'text-bg-primary',
+            'Admin' => 'text-bg-dark',
+            'Expert' => 'text-bg-danger',
+            'Moderator' => 'text-bg-danger',
+            'Contributor' => 'text-bg-primary',
             'Trusted Member' => 'text-bg-success',
-            'Member'         => 'text-bg-secondary',
+            'Member' => 'text-bg-secondary',
         ];
         $badgeClass = $designationColors[$badge] ?? 'text-bg-secondary';
 
@@ -329,6 +329,8 @@ if (!empty($currentUser['id'])) {
       if (!empty($currentUser)) {
           if (($currentUser['role'] ?? '') === 'admin')
               $canEdit = true;
+          elseif (($currentUser['forum_designation'] ?? '') === 'Moderator')
+              $canEdit = true;
           elseif (!empty($p['created_by_user_id']) && (int) $p['created_by_user_id'] === (int) $currentUser['id'])
               $canEdit = true;
       }
@@ -345,7 +347,7 @@ if (!empty($currentUser['id'])) {
         </a>
     <?php endif; ?>
 
-    <?php if (($currentUser['role'] ?? '') === 'admin'): ?>
+    <?php if (($currentUser['role'] ?? '') === 'admin' || ($currentUser['forum_designation'] ?? '') === 'Moderator'): ?>
         <form method="post"
               action="/delete_topic.php"
               onsubmit="return confirm('Delete this topic and ALL replies permanently?');"
