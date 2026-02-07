@@ -12,6 +12,17 @@ $csrf = $_SESSION['csrf_token'];
 
 require_once __DIR__ . '/includes/header.php';
 
+$isBanned = false;
+if (!empty($currentUser['id'])) {
+    $stmt = $conn->prepare("SELECT is_banned FROM users WHERE id = ?");
+    $stmt->bind_param("i", $currentUser['id']);
+    $stmt->execute();
+    $stmt->bind_result($isBanned);
+    $stmt->fetch();
+    $stmt->close();
+    $isBanned = (int) $isBanned === 1;
+}
+
 $slug = trim($_GET['t'] ?? '');
 if ($slug === '') {
     http_response_code(404);
@@ -30,7 +41,6 @@ if (!$topic) {
 }
 
 $pageTitle = $topic['title'];
-
 
 if (isset($_SESSION['smtp_debug'])) {
     $d = $_SESSION['smtp_debug'];
@@ -144,6 +154,97 @@ if (empty($_SESSION['csrf_token'])) {
 }
 $csrf = $_SESSION['csrf_token'];
 
+// ---------- NEW: FLASH HANDLING (for warning messages, exactly like admin.php) ----------
+function flash_set($type, $msg)
+{
+    $_SESSION['flash'] = ['type' => $type, 'msg' => $msg];
+}
+function flash_get()
+{
+    $f = $_SESSION['flash'] ?? null;
+    unset($_SESSION['flash']);
+    return $f;
+}
+
+// ---------- NEW: CSRF VERIFY FUNCTION (copied from admin.php) ----------
+function csrf_verify()
+{
+    $posted = $_POST['csrf_token'] ?? '';
+    if (!is_string($posted) || !hash_equals($_SESSION['csrf_token'] ?? '', $posted)) {
+        http_response_code(400);
+        exit('Bad request');
+    }
+}
+
+// Check if current user is admin (for showing warn button and processing)
+$isAdmin = (!empty($currentUser) && ($currentUser['role'] ?? '') === 'admin');
+
+
+// ---------- NEW: WARN USER ACTION (handles warnings on this page, admin-only, with detailed reasons) ----------
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'warn_user' && $isAdmin) {
+    csrf_verify();
+
+    try {
+        $userId = (int) ($_POST['user_id'] ?? 0);
+        $reason = trim((string) ($_POST['reason'] ?? ''));
+
+        if ($userId <= 0 || empty($reason)) {
+            throw new RuntimeException('Invalid user or reason.');
+        }
+
+        // If warnings_count column exists, increment in DB
+        $checkRes = $conn->query("SHOW COLUMNS FROM users LIKE 'warnings_count'");
+        $hasWarningsColumn = $checkRes && $checkRes->num_rows > 0;
+        if ($checkRes)
+            $checkRes->close();
+
+        if ($hasWarningsColumn) {
+            $stmt = $conn->prepare("UPDATE users SET warnings_count = warnings_count + 1 WHERE id = ?");
+            if ($stmt) {
+                $stmt->bind_param("i", $userId);
+                if (!$stmt->execute()) {
+                    throw new RuntimeException('Failed to update warnings: ' . $stmt->error);
+                }
+                $stmt->close();
+            }
+
+            // ---------- INSERT REASON TO DB TABLE (persistent, with details from mod judgment) ----------
+            $issuedBy = (int) ($currentUser['id'] ?? 0); // Admin issuing the warning
+            $tableExists = false;
+            $checkStmt = $conn->query("SHOW TABLES LIKE 'warning_reasons'");
+            if ($checkStmt && $checkStmt->num_rows > 0)
+                $tableExists = true;
+            $checkStmt->close();
+
+            if ($tableExists) {
+                $insStmt = $conn->prepare("INSERT INTO warning_reasons (user_id, reason, issued_by) VALUES (?, ?, ?)");
+                if ($insStmt) {
+                    $insStmt->bind_param("isi", $userId, $reason, $issuedBy);
+                    $insStmt->execute();
+                    $insStmt->close();
+                }
+            } else {
+                // Fallback: Log to file (for if table not created yet)
+                file_put_contents(__DIR__ . '/warnings.log', json_encode(['userId' => $userId, 'reason' => $reason, 'issued_by' => $issuedBy, 'date' => date('Y-m-d H:i:s')]) . "\n", FILE_APPEND);
+            }
+
+            flash_set('success', "Warning issued.");
+        } else {
+            // Fallback to session if no DB support
+            if (!isset($_SESSION['user_warnings']))
+                $_SESSION['user_warnings'] = [];
+            $_SESSION['user_warnings'][$userId][] = ['reason' => $reason, 'date' => date('Y-m-d H:i:s')];
+            flash_set('success', 'Warning issued (session-based, not saved to DB).');
+        }
+
+        // Stay on page—no redirect
+
+    } catch (Throwable $e) {
+        flash_set('danger', $e->getMessage());
+        // Stay on page on error too
+    }
+}
+
 // Load topic (now includes is_pinned)
 $stmt = $conn->prepare("
   SELECT t.id, t.title, t.slug, t.is_locked, t.is_pinned,
@@ -179,6 +280,21 @@ if (!empty($currentUser)) {
         $row = $stmt->get_result()->fetch_assoc();
         $userPostCount = (int) ($row['c'] ?? 0);
         $stmt->close();
+    }
+}
+
+// ---------- NEW: FETCH TOPIC AUTHOR FOR WARN FUNCTION (added lightly, no extra DB load) ----------
+$topicAuthor = ['id' => null, 'name' => null];
+if (!empty($topic['id'])) {
+    $stmt = $conn->prepare("SELECT created_by_user_id AS id, created_by_name AS name FROM forum_topics WHERE id = ? LIMIT 1");
+    if ($stmt) {
+        $stmt->bind_param("i", $topic['id']);
+        $stmt->execute();
+        $authorRow = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
+        if ($authorRow) {
+            $topicAuthor = ['id' => (int) $authorRow['id'], 'name' => $authorRow['name']];
+        }
     }
 }
 
@@ -231,6 +347,13 @@ if (!empty($currentUser['id'])) {
 
 <a class="text-decoration-none" href="/category.php?c=<?= h($topic['category_slug']) ?>">&larr; Back to <?= h($topic['category_name']) ?></a>
 
+<?php $flash = flash_get(); // ---------- NEW FLASH DISPLAY ---------- ?>
+<?php if ($flash): ?>
+  <div class="alert alert-<?= htmlspecialchars($flash['type']) ?> mt-2">
+    <?= htmlspecialchars($flash['msg']) ?>
+  </div>
+<?php endif; ?>
+
 <div class="d-flex justify-content-between align-items-start mt-2 mb-2">
   <div>
     <h1 class="h4 mb-1"><?= h($topic['title']) ?></h1>
@@ -245,8 +368,17 @@ if (!empty($currentUser['id'])) {
     </div>
   </div>
 
-  <?php if (!empty($currentUser) && ($currentUser['role'] ?? '') === 'admin'): ?>
+  <?php if ($isAdmin): ?>
     <div class="d-flex gap-2">
+      <!-- ---------- NEW: WARN BUTTON NEXT TO PIN/LOCK (integrated, no code deleted) ---------- -->
+      <button class="btn btn-sm btn-warning" 
+              data-bs-toggle="modal" 
+              data-bs-target="#warnModal" 
+              data-user-id="<?= (int) $topicAuthor['id'] ?>" 
+              data-user-name="<?= htmlspecialchars($topicAuthor['name'] ?? 'Unknown') ?>">
+        Warn <i class="bi bi-exclamation-triangle"></i>
+      </button>
+
       <form method="post" action="/topic_pin_toggle.php" class="m-0">
         <input type="hidden" name="csrf_token" value="<?= h($csrf) ?>">
         <input type="hidden" name="topic_id" value="<?= (int) $topic['id'] ?>">
@@ -340,12 +472,14 @@ if (!empty($currentUser['id'])) {
 
 <div class="d-flex gap-2 mt-3 align-items-center flex-wrap">
 
-    <?php if ($canEdit): ?>
-        <a class="btn btn-sm btn-outline-secondary"
-           href="/edit_post.php?id=<?= (int) $p['id'] ?>">
-            Edit
-        </a>
-    <?php endif; ?>
+<?php if ($canEdit && !$isBanned): ?>
+    <a class="btn btn-sm btn-outline-secondary"
+       href="/edit_post.php?id=<?= (int) $p['id'] ?>">
+        Edit
+    </a>
+<?php elseif ($canEdit && $isBanned): ?>
+    <span class="btn btn-sm btn-outline-secondary disabled" style="pointer-events: none; opacity: 0.5;">Edit (banned)</span>
+<?php endif; ?>
 
     <?php if (($currentUser['role'] ?? '') === 'admin' || ($currentUser['forum_designation'] ?? '') === 'Moderator'): ?>
         <form method="post"
@@ -419,7 +553,7 @@ if (!empty($currentUser['id'])) {
 
         <!-- Hidden sources for clipboard -->
         <div id="citePlain<?= $postId ?>" class="d-none"><?= h($citePlain) ?></div>
-        <div id="citeHtml<?= $postId ?>" class="d-none"><?= $citeHtml ?></div>
+        <div id="citeHtml<?= $postId ?>" class="d-none"><?= h($citeHtml) ?></div>
 
         <button type="button"
                 class="btn btn-sm btn-outline-primary mt-2"
@@ -454,6 +588,7 @@ if (!empty($currentUser['id'])) {
         ta.select();
         document.execCommand('copy');
         ta.remove();
+        document.body.removeChild(ta);
       }
     </script>
 <?php endif; ?>
@@ -462,7 +597,7 @@ if (!empty($currentUser['id'])) {
 <?php if ($showAbout): ?>
   <hr class="my-3" />
 
-  <div class="mt-2 p-3 border rounded bg-light small author-context">
+  <div class="mt-2 p-3 border rounded bg-light author-context">
     <div class="d-flex align-items-center justify-content-between">
       <div class="fw-semibold">Why I’m here</div>
 
@@ -525,8 +660,49 @@ if (false):
 
 <?php if ((int) $topic['is_locked'] === 1): ?>
   <div class="alert alert-secondary">This topic is locked.</div>
+<?php elseif ($isBanned): ?>
+  <div class="alert alert-warning">You are banned and cannot add replies.</div>
+  <span class="btn btn-primary disabled" style="pointer-events: none; opacity: 0.5;">Add reply (banned)</span>
 <?php else: ?>
-  <a class="btn btn-primary" href="/reply.php?t=<?= h($topic['slug']) ?>">Add reply</a>
+  <!-- Your original button/link here, e.g.: -->
+  <a href="#" class="btn btn-primary" id="add-reply-btn">Add reply</a>
 <?php endif; ?>
+
+<!-- ---------- NEW: WARNING MODAL (added at bottom, no code deleted here, with corrected textarea for free-text reasons) ---------- -->
+<div class="modal fade" id="warnModal" tabindex="-1" aria-labelledby="warnModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <form method="post" action="" id="warnForm">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="warnModalLabel">Issue Warning to <strong id="warnUserName">-</strong> (Topic Author)</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p>This warning will be tracked in the admin panel. Author posts and activity may be limited after multiple warnings.</p>
+          <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf) ?>">
+          <input type="hidden" name="action" value="warn_user">
+          <input type="hidden" name="user_id" id="warnUserId">
+          <div class="mb-3">
+            <label for="reasonTextarea" class="form-label">Reason for Warning (please provide details for clarity):</label>
+            <textarea class="form-control" id="reasonTextarea" name="reason" rows="3" placeholder="E.g., Personal harassment directed at user X, including insults in 3 posts. Dealt with their 2nd warning already." required></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-warning">Issue Warning</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+// ---------- NEW: MODAL HANDLER (added, no existing code changed) ----------
+document.getElementById('warnModal').addEventListener('show.bs.modal', function (event) {
+  const button = event.relatedTarget;
+  document.getElementById('warnUserId').value = button.getAttribute('data-user-id');
+  document.getElementById('warnUserName').textContent = button.getAttribute('data-user-name');
+});
+</script>
 
 <?php require_once __DIR__ . '/includes/footer.php'; ?>

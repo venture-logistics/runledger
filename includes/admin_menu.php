@@ -14,6 +14,7 @@ $adminItems = [
   'admin_docs_quality.php'          => ['Document Quality', 'kb_quality'],
   'admin_db_manager.php'            => ['Database Management', 'db'],
   'admin_plugin_manager.php'        => ['Plugin Manager', 'plugin'],
+  'admin_banning.php'               => ['Warning / Banning', 'warning'],
   'admin_updates.php'               => ['Updates', 'updates'],
 ];
 

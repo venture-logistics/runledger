@@ -28,7 +28,8 @@ if (empty($_SESSION['csrf_token'])) {
 }
 $csrf = $_SESSION['csrf_token'];
 
-function csrf_verify() {
+function csrf_verify()
+{
     $posted = $_POST['csrf_token'] ?? '';
     if (!is_string($posted) || !hash_equals($_SESSION['csrf_token'] ?? '', $posted)) {
         http_response_code(400);
@@ -37,10 +38,12 @@ function csrf_verify() {
 }
 
 // ---------- FLASH ----------
-function flash_set($type, $msg) {
+function flash_set($type, $msg)
+{
     $_SESSION['flash'] = ['type' => $type, 'msg' => $msg];
 }
-function flash_get() {
+function flash_get()
+{
     $f = $_SESSION['flash'] ?? null;
     unset($_SESSION['flash']);
     return $f;
@@ -51,7 +54,7 @@ $FORUM_DESIGNATIONS = [];
 $res = $conn->query("SHOW COLUMNS FROM users LIKE 'forum_designation'");
 if ($res && ($col = $res->fetch_assoc())) {
     // Type will be like: enum('Member','Trusted Member',...)
-    if (isset($col['Type']) && preg_match("/^enum\((.*)\)$/i", (string)$col['Type'], $m)) {
+    if (isset($col['Type']) && preg_match("/^enum\((.*)\)$/i", (string) $col['Type'], $m)) {
         preg_match_all("/'((?:\\\\'|[^'])*)'/", $m[1], $matches);
         $FORUM_DESIGNATIONS = array_map(
             static fn($v) => str_replace("\\'", "'", $v),
@@ -128,8 +131,51 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'updat
     }
 }
 
-// ---------- QUERY MEMBERS (WITH POST COUNT) ----------
-$q = trim((string)($_GET['q'] ?? ''));
+// ---------- NEW: ACTION: TOGGLE BAN ----------
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'toggle_ban') {
+    csrf_verify();
+    $userId = (int) ($_POST['user_id'] ?? 0);
+    if ($userId <= 0) {
+        flash_set('danger', 'Invalid user.');
+        header('Location: admin.php');
+        exit;
+    }
+
+    $checkStmt = $conn->prepare("SELECT is_banned FROM users WHERE id = ?");
+    if (!$checkStmt) {
+        flash_set('danger', 'DB error.');
+        header('Location: admin.php');
+        exit;
+    }
+    $checkStmt->bind_param("i", $userId);
+    $checkStmt->execute();
+    $checkStmt->bind_result($currentBan);
+    $checkStmt->fetch();
+    $checkStmt->close();
+
+    $newBan = ($currentBan == 1) ? 0 : 1;
+    $toggleStmt = $conn->prepare("UPDATE users SET is_banned = ? WHERE id = ?");
+    if (!$toggleStmt) {
+        flash_set('danger', 'DB error.');
+        header('Location: admin.php');
+        exit;
+    }
+    $toggleStmt->bind_param("ii", $newBan, $userId);
+    if ($toggleStmt->execute()) {
+        flash_set('success', 'User ' . ($newBan ? 'banned' : 'unbanned') . ' successfully.');
+        // Optional log
+        $logEntry = json_encode(['action' => 'ban_toggle', 'user_id' => $userId, 'new_status' => $newBan, 'admin' => ($user['id'] ?? 0), 'date' => date('Y-m-d H:i:s')]);
+        file_put_contents(__DIR__ . '/warnings.log', $logEntry . "\n", FILE_APPEND);
+    } else {
+        flash_set('danger', 'Error toggling ban: ' . $toggleStmt->error);
+    }
+    $toggleStmt->close();
+    header('Location: admin.php');
+    exit;
+}
+
+// ---------- QUERY MEMBERS (WITH POST COUNT AND BAN STATUS) ----------
+$q = trim((string) ($_GET['q'] ?? ''));
 $members = [];
 $resOk = false;
 
@@ -139,6 +185,7 @@ $sql = "
     u.name,
     u.email,
     u.forum_designation,
+    u.is_banned,
     COUNT(p.id) AS post_count
   FROM users u
   LEFT JOIN forum_posts p
@@ -151,61 +198,63 @@ $types = '';
 $params = [];
 
 if ($q !== '') {
-  $sql .= " AND (u.name LIKE ? OR u.email LIKE ? OR u.forum_designation LIKE ?)";
-  $like = "%{$q}%";
-  $types = 'sss';
-  $params = [$like, $like, $like];
+    $sql .= " AND (u.name LIKE ? OR u.email LIKE ? OR u.forum_designation LIKE ?)";
+    $like = "%{$q}%";
+    $types = 'sss';
+    $params = [$like, $like, $like];
 }
 
 // IMPORTANT: strict SQL mode safe GROUP BY
 $sql .= "
-  GROUP BY u.id, u.name, u.email, u.forum_designation
+  GROUP BY u.id, u.name, u.email, u.forum_designation, u.is_banned
   ORDER BY post_count DESC, u.id ASC
 ";
 
 $stmt = $conn->prepare($sql);
 if (!$stmt) {
-  flash_set('danger', 'Admin list query failed: ' . $conn->error);
+    flash_set('danger', 'Admin list query failed: ' . $conn->error);
 } else {
-  if ($types !== '') {
-    $stmt->bind_param($types, ...$params);
-  }
-
-  if (!$stmt->execute()) {
-    flash_set('danger', 'Admin list query failed: ' . $stmt->error);
-  } else {
-    $resOk = true;
-
-    $stmt->bind_result($id, $name, $email, $forum_designation, $post_count);
-    while ($stmt->fetch()) {
-      $members[] = [
-        'id' => (int)$id,
-        'name' => $name,
-        'email' => $email,
-        'forum_designation' => $forum_designation,
-        'post_count' => (int)$post_count,
-      ];
+    if ($types !== '') {
+        $stmt->bind_param($types, ...$params);
     }
-  }
 
-  $stmt->close();
+    if (!$stmt->execute()) {
+        flash_set('danger', 'Admin list query failed: ' . $stmt->error);
+    } else {
+        $resOk = true;
+
+        $stmt->bind_result($id, $name, $email, $forum_designation, $is_banned, $post_count);
+        while ($stmt->fetch()) {
+            $members[] = [
+                'id' => (int) $id,
+                'name' => $name,
+                'email' => $email,
+                'forum_designation' => $forum_designation,
+                'is_banned' => (int) $is_banned,
+                'post_count' => (int) $post_count,
+            ];
+        }
+    }
+
+    $stmt->close();
 }
 
 // Fallback only if the main query genuinely failed
 if (!$resOk) {
-  $fallbackSql = "
-    SELECT id, name, email, forum_designation, 0 AS post_count
+    $fallbackSql = "
+    SELECT id, name, email, forum_designation, is_banned, 0 AS post_count
     FROM users
     ORDER BY id ASC
   ";
-  $res2 = $conn->query($fallbackSql);
-  if ($res2) {
-    $members = [];
-    while ($row = $res2->fetch_assoc()) $members[] = $row;
-    flash_set('warning', 'Post counts unavailable (forum_posts query failed). Showing users only.');
-  } else {
-    flash_set('danger', 'Admin list query failed: ' . $conn->error);
-  }
+    $res2 = $conn->query($fallbackSql);
+    if ($res2) {
+        $members = [];
+        while ($row = $res2->fetch_assoc())
+            $members[] = $row;
+        flash_set('warning', 'Post counts unavailable (forum_posts query failed). Showing users only.');
+    } else {
+        flash_set('danger', 'Admin list query failed: ' . $conn->error);
+    }
 }
 
 $flash = flash_get();
@@ -252,40 +301,58 @@ $flash = flash_get();
           <tbody>
             <?php foreach ($members as $m): ?>
               <tr>
-                <td><?= (int)$m['id'] ?></td>
                 <td>
-                  <form method="post" class="user-edit-form" action="admin.php" id="form-<?= (int)$m['id'] ?>">
+                  <?= (int) $m['id'] ?>
+                  <?php if ((int) $m['is_banned'] === 1): ?>
+                    <span class="badge text-bg-danger ms-1">Banned</span>
+                  <?php endif; ?>
+                </td>
+                <td>
+                  <form method="post" class="user-edit-form" action="admin.php" id="form-<?= (int) $m['id'] ?>">
                     <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf) ?>">
                     <input type="hidden" name="action" value="update_user">
-                    <input type="hidden" name="user_id" value="<?= (int)$m['id'] ?>">
+                    <input type="hidden" name="user_id" value="<?= (int) $m['id'] ?>">
                     <input type="text" name="name" class="form-control form-control-sm" 
-                           value="<?= htmlspecialchars((string)$m['name']) ?>" required>
+                           value="<?= htmlspecialchars((string) $m['name']) ?>" required>
                 </td>
                 <td>
                     <input type="email" name="email" class="form-control form-control-sm" 
-                           value="<?= htmlspecialchars((string)$m['email']) ?>" required>
+                           value="<?= htmlspecialchars((string) $m['email']) ?>" required>
                 </td>
                 <td>
                     <select name="forum_designation" class="form-select form-select-sm">
                       <?php foreach ($FORUM_DESIGNATIONS as $d): ?>
                         <option value="<?= htmlspecialchars($d) ?>"
-                          <?= ((string)($m['forum_designation'] ?? '') === (string)$d) ? 'selected' : '' ?>>
+                          <?= ((string) ($m['forum_designation'] ?? '') === (string) $d) ? 'selected' : '' ?>>
                           <?= htmlspecialchars($d) ?>
                         </option>
                       <?php endforeach; ?>
                     </select>
                 </td>
-                <td class="text-end"><?= (int)$m['post_count'] ?></td>
+                <td class="text-end"><?= (int) $m['post_count'] ?></td>
                 <td class="text-end">
+                  <div class="d-flex gap-1 justify-content-end">
+                    <!-- EXISTING SAVE BUTTON INSIDE FORM (no change) -->
                     <button class="btn btn-sm btn-primary" type="submit">Save</button>
                   </form>
+
+                  <!-- NEW: BAN/UNBAN TOGGLE BUTTON (separate form outside the edit form) -->
+                  <form method="post" action="admin.php" class="m-0" onsubmit="return confirm('<?= ((int) $m['is_banned'] === 1) ? 'Unban' : 'Ban' ?> this user?')">
+                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf) ?>">
+                    <input type="hidden" name="action" value="toggle_ban">
+                    <input type="hidden" name="user_id" value="<?= (int) $m['id'] ?>">
+                    <button class="btn btn-sm <?= ((int) $m['is_banned'] === 1) ? 'btn-success' : 'btn-danger' ?>" type="submit">
+                      <?= ((int) $m['is_banned'] === 1) ? 'Unban' : 'Ban' ?>
+                    </button>
+                  </form>
+                  </div>
                 </td>
               </tr>
             <?php endforeach; ?>
 
             <?php if (!$members): ?>
               <tr>
-                <td colspan="6" class="text-center text-muted py-4">No members found</td>
+                <td colspan="7" class="text-center text-muted py-4">No members found</td>
               </tr>
             <?php endif; ?>
           </tbody>
