@@ -135,6 +135,16 @@ if (isset($conn) && ($conn instanceof mysqli)) {
 
 require_once __DIR__ . '/seo.php';
 
+// Initialize plugin system (only once)
+if (!class_exists('PluginSystem')) {
+    require_once __DIR__ . '/plugin_system.php';
+    require_once __DIR__ . '/plugin_loader.php';
+
+    // Load all plugins
+    $GLOBALS['plugin_loader'] = new PluginLoader(__DIR__ . '/../plugins');
+    $GLOBALS['plugin_loader']->load_all();
+}
+
 ?>
 <!doctype html>
 <html lang="en">

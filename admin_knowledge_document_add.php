@@ -1,5 +1,11 @@
 <?php
-// admin_knowledge_document_edit.php
+declare(strict_types=1);
+
+ini_set('display_errors', '1');
+ini_set('display_startup_errors', '1');
+error_reporting(E_ALL);
+
+// admin_knowledge_document_add.php
 
 if (session_status() !== PHP_SESSION_ACTIVE)
     session_start();
@@ -23,7 +29,7 @@ $stmt->close();
 
 if (!$user || ($user['role'] !== 'admin' && $user['forum_designation'] !== 'Expert')) {
     http_response_code(403);
-    exit('Access denied. Only admins and experts can edit knowledge documents.');
+    exit('Access denied. Only admins and experts can add knowledge documents.');
 }
 
 // CSRF
@@ -41,12 +47,6 @@ function csrf_verify(): void
     }
 }
 
-$id = (int) ($_GET['id'] ?? ($_POST['id'] ?? 0));
-if ($id <= 0) {
-    http_response_code(404);
-    exit('Document not found.');
-}
-
 // Fetch categories
 $kbCategories = [];
 $res = $conn->query("SELECT id, name FROM knowledge_categories WHERE is_active = 1 ORDER BY sort_order ASC, name ASC");
@@ -56,7 +56,7 @@ while ($row = $res->fetch_assoc())
     $kbCategories[] = $row;
 $res->free();
 
-// Handle POST update BEFORE output
+// Handle POST submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_verify();
 
@@ -66,66 +66,59 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $content = $_POST['content'] ?? '';
     $is_published = isset($_POST['is_published']) ? 1 : 0;
 
+    // Auto-generate slug if empty
+    if ($slug === '' && $title !== '') {
+        $slug = strtolower(trim(preg_replace('/[^A-Za-z0-9-]+/', '-', $title), '-'));
+    }
+
     // Validate
     if ($title === '' || $category_id <= 0 || trim(strip_tags($content)) === '') {
         $error = "Category, title and content are required.";
     } elseif ($slug === '') {
-        $error = "Slug is required.";
+        $error = "Slug could not be generated.";
     } else {
-        // Validation passed - perform UPDATE
-        $stmt = $conn->prepare("
-      UPDATE `knowledge_documents`
-      SET `category_id` = ?, `title` = ?, `slug` = ?, `content` = ?, `is_published` = ?, `updated_at` = NOW()
-      WHERE `id` = ?
-      LIMIT 1
-    ");
-        if (!$stmt) {
-            $error = "Prepare failed: " . $conn->error;
-        } else {
-            $stmt->bind_param("isssii", $category_id, $title, $slug, $content, $is_published, $id);
-            if ($stmt->execute()) {
-                $stmt->close();
-                header("Location: admin_knowledge_documents.php");
-                exit;
-            }
-            $error = "Save failed: " . $stmt->error;
+        // Check if slug already exists
+        $stmt = $conn->prepare("SELECT id FROM knowledge_documents WHERE slug = ? LIMIT 1");
+        $stmt->bind_param("s", $slug);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        if ($result->num_rows > 0) {
+            $error = "A document with this slug already exists. Please use a different slug.";
             $stmt->close();
+        } else {
+            $stmt->close();
+
+            // Insert new document
+            $stmt = $conn->prepare("
+    INSERT INTO knowledge_documents 
+    (category_id, title, slug, content, is_published, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, NOW(), NOW())
+");
+            if (!$stmt) {
+                $error = "Prepare failed: " . $conn->error;
+            } else {
+                $stmt->bind_param("isssi", $category_id, $title, $slug, $content, $is_published);
+                if ($stmt->execute()) {
+                    $stmt->close();
+                    header("Location: admin_knowledge_documents.php");
+                    exit;
+                }
+                $error = "Save failed: " . $stmt->error;
+                $stmt->close();
+            }
         }
     }
 }
 
-// Fetch current document (for form)
-$kbDoc = null;
-$stmt = $conn->prepare("
-  SELECT id, category_id, title, slug, content, is_published
-  FROM knowledge_documents
-  WHERE id = ?
-  LIMIT 1
-");
-$stmt->bind_param("i", $id);
-$stmt->execute();
-$res = $stmt->get_result();
-$kbDoc = $res ? $res->fetch_assoc() : null;
-$stmt->close();
-
-if (!$kbDoc) {
-    http_response_code(404);
-    exit('Document not found.');
-}
-
-$pageTitle = "Edit Knowledge Document";
+$pageTitle = "Add Knowledge Document";
 
 require_once __DIR__ . '/includes/header.php';
 ?>
 
 <div class="container py-4">
   <div class="d-flex align-items-center justify-content-between mb-3">
-    <h1 class="h4 mb-0">Edit Document</h1>
-    <div class="d-flex gap-2">
-      <a class="btn btn-sm btn-outline-secondary" href="admin_knowledge_documents.php">Back</a>
-      <a class="btn btn-sm btn-outline-secondary" target="_blank"
-         href="knowledge_document.php?doc=<?= h($kbDoc['slug']) ?>">View</a>
-    </div>
+    <h1 class="h4 mb-0">Add New Document</h1>
+    <a class="btn btn-sm btn-outline-secondary" href="admin_knowledge_documents.php">Back</a>
   </div>
 
   <?php if (!empty($error)): ?>
@@ -134,14 +127,13 @@ require_once __DIR__ . '/includes/header.php';
 
   <form method="post">
     <input type="hidden" name="csrf_token" value="<?= h($csrf) ?>">
-    <input type="hidden" name="id" value="<?= (int) $kbDoc['id'] ?>">
 
     <div class="mb-3">
       <label class="form-label">Category</label>
       <select name="category_id" class="form-select" required>
         <option value="">Choose…</option>
         <?php foreach ($kbCategories as $cat): ?>
-          <option value="<?= (int) $cat['id'] ?>" <?= ((int) $kbDoc['category_id'] === (int) $cat['id']) ? 'selected' : '' ?>>
+          <option value="<?= (int) $cat['id'] ?>" <?= (isset($_POST['category_id']) && (int) $_POST['category_id'] === (int) $cat['id']) ? 'selected' : '' ?>>
             <?= h($cat['name']) ?>
           </option>
         <?php endforeach; ?>
@@ -150,27 +142,27 @@ require_once __DIR__ . '/includes/header.php';
 
     <div class="mb-3">
       <label class="form-label">Title</label>
-      <input type="text" name="title" class="form-control" required value="<?= h($kbDoc['title']) ?>">
+      <input type="text" name="title" class="form-control" required value="<?= h($_POST['title'] ?? '') ?>">
     </div>
 
     <div class="mb-3">
-      <label class="form-label">Slug</label>
-      <input type="text" name="slug" class="form-control" value="<?= h($kbDoc['slug']) ?>">
-      <div class="form-text">Lowercase + hyphens. Leave as-is unless you want to change the URL.</div>
+      <label class="form-label">Slug (optional)</label>
+      <input type="text" name="slug" class="form-control" value="<?= h($_POST['slug'] ?? '') ?>">
+      <div class="form-text">Leave empty to auto-generate from title. Use lowercase + hyphens.</div>
     </div>
 
     <div class="mb-3">
       <label class="form-label">Content</label>
-      <textarea name="content" id="editor" rows="10" data-ckeditor="1" class="form-control"><?= h($kbDoc['content']) ?></textarea>
+      <textarea name="content" id="editor" rows="10" data-ckeditor="1" class="form-control"><?= h($_POST['content'] ?? '') ?></textarea>
     </div>
 
     <div class="form-check mb-3">
       <input class="form-check-input" type="checkbox" name="is_published" id="is_published"
-        <?= ((int) $kbDoc['is_published'] === 1) ? 'checked' : '' ?>>
+        <?= (isset($_POST['is_published'])) ? 'checked' : '' ?>>
       <label class="form-check-label" for="is_published">Published</label>
     </div>
 
-    <button class="btn btn-primary">Save changes</button>
+    <button class="btn btn-primary">Create Document</button>
   </form>
 </div>
 

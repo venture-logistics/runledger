@@ -11,9 +11,10 @@ $adminItems = [
   'admin_knowledge_document_add.php'=> ['Add Document', 'kb_add'],
   'admin_knowledge_documents.php'   => ['Manage Documents', 'kb_manage'],
   'admin_menu_items.php'            => ['Menu Management', 'menu'],
-  'admin_docs_quality.php'        => ['Document Quality', 'kb_quality'],
-  'admin_db_manager.php'        => ['Database Management', 'db'],
-  'admin_updates.php'        => ['Updates', 'updates'],
+  'admin_docs_quality.php'          => ['Document Quality', 'kb_quality'],
+  'admin_db_manager.php'            => ['Database Management', 'db'],
+  'admin_plugin_manager.php'        => ['Plugin Manager', 'plugin'],
+  'admin_updates.php'               => ['Updates', 'updates'],
 ];
 
 // current script name
