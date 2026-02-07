@@ -83,7 +83,7 @@ CREATE TABLE `forum_posts` (
 CREATE TABLE `users` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `role` enum('user','admin') NOT NULL DEFAULT 'user',
-  `forum_designation` enum('Member','Trusted Member','Expert','Contributor','Admin') DEFAULT 'Member',
+  `forum_designation` enum('Member','Trusted Member','Expert','Contributor','Moderator','Admin') DEFAULT 'Member',
   `badge_class` varchar(30) DEFAULT 'text-bg-secondary',
   `forum_about` varchar(240) DEFAULT NULL,
   `background_perspective` varchar(80) DEFAULT NULL,
@@ -125,7 +125,7 @@ CREATE TABLE `knowledge_categories` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_knowledge_categories_slug` (`slug`),
   KEY `idx_knowledge_categories_active_sort` (`is_active`,`sort_order`,`name`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
@@ -143,7 +143,7 @@ CREATE TABLE `knowledge_documents` (
   KEY `idx_category` (`category_id`),
   FULLTEXT KEY `ft_title_content` (`title`,`content`),
   CONSTRAINT `fk_kb_docs_category` FOREIGN KEY (`category_id`) REFERENCES `knowledge_categories` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
