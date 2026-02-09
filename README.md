@@ -8,6 +8,11 @@ A lightweight (2Mb), fast - Google PageSpeed 100, self-hosted knowledge base and
 
 Visit [project website](https://runledger.org/) for further details.
 
+## Contributors
+
+[![venture-logistics](https://img.shields.io)]([https://github.com](https://github.com/venture-logistics/runledger))
+
+
 ## Features
 
 - **Knowledge Base**: Organize documentation with categories and articles
