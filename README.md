@@ -10,7 +10,7 @@ Visit [project website](https://runledger.org/) for further details.
 
 ## Contributors
 
-[![Contributor](https://img.shields.io/badge/venture--logistics-red)](https://github.com/venture-logistics)
+[![Contributor](https://img.shields.io/badge/venture--logistics-gold)](https://github.com/venture-logistics)
 
 ## Features
 
