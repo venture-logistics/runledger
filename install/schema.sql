@@ -58,7 +58,11 @@ CREATE TABLE `forum_topics` (
   KEY `idx_forum_topics_cat_updated` (`category_id`,`updated_at`),
   FULLTEXT KEY `ft_title` (`title`),
   CONSTRAINT `fk_forum_topics_category` FOREIGN KEY (`category_id`) REFERENCES `forum_categories` (`id`) ON DELETE CASCADE
+<<<<<<< HEAD
 ) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+=======
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+>>>>>>> 6872f7720a090bdd178b149007ec28b3c8d589db
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
@@ -76,7 +80,11 @@ CREATE TABLE `forum_posts` (
   KEY `idx_forum_posts_topic_created` (`topic_id`,`created_at`),
   FULLTEXT KEY `ft_body` (`body`),
   CONSTRAINT `fk_forum_posts_topic` FOREIGN KEY (`topic_id`) REFERENCES `forum_topics` (`id`) ON DELETE CASCADE
+<<<<<<< HEAD
 ) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+=======
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+>>>>>>> 6872f7720a090bdd178b149007ec28b3c8d589db
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
@@ -194,6 +202,7 @@ CREATE TABLE `menu_items` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
+<<<<<<< HEAD
 CREATE TABLE `purchased_plugins` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) NOT NULL,
@@ -206,6 +215,8 @@ CREATE TABLE `purchased_plugins` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
+=======
+>>>>>>> 6872f7720a090bdd178b149007ec28b3c8d589db
 CREATE TABLE `schema_migrations` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `migration` varchar(255) NOT NULL,

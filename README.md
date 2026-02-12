@@ -8,6 +8,13 @@ A lightweight (2Mb), fast - Google PageSpeed 100, self-hosted knowledge base and
 
 Visit [project website](https://runledger.org/) for further details.
 
+<<<<<<< HEAD
+=======
+## Contributors
+
+[![Contributor](https://img.shields.io/badge/venture--logistics-gold)](https://github.com/venture-logistics)
+
+>>>>>>> 6872f7720a090bdd178b149007ec28b3c8d589db
 ## Features
 
 - **Knowledge Base**: Organize documentation with categories and articles

@@ -156,10 +156,13 @@ if (!class_exists('PluginSystem')) {
   <title><?= h($seoTitle) ?></title>
   <link rel="canonical" href="<?= h($seoCanonical) ?>">
 
+<<<<<<< HEAD
   <link rel="sitemap" type="application/xml" title="Sitemap" href="sitemap.xml" />
   <link rel="agents" type="application/json" href=".well-known/agents.json" />
 
 
+=======
+>>>>>>> 6872f7720a090bdd178b149007ec28b3c8d589db
 <style>
 /* Topic-page category accent */
 main[class*="cat-"] { border-left: 4px solid transparent; padding-left: 12px; }

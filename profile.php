@@ -208,6 +208,7 @@ $stmt->bind_param("si", $background_perspective, $currentUser['id']);
 $stmt->execute();
 $stmt->close();
 
+<<<<<<< HEAD
 // Load purchased plugins
 $purchasedPlugins = [];
 $stmt = $conn->prepare("
@@ -226,6 +227,8 @@ while ($row = $result->fetch_assoc()) {
   ];
 }
 $stmt->close();
+=======
+>>>>>>> 6872f7720a090bdd178b149007ec28b3c8d589db
 
 ?>
 
@@ -295,6 +298,7 @@ $stmt->close();
 
       </div>
     </div>
+<<<<<<< HEAD
 
     <!-- Purchased plugins -->
     <div class="card mt-3">
@@ -322,6 +326,10 @@ $stmt->close();
 
 
 
+=======
+  </div>
+
+>>>>>>> 6872f7720a090bdd178b149007ec28b3c8d589db
   <!-- Why I'm here -->
   <div class="col-lg-7">
     <div class="card mb-4">
@@ -404,8 +412,16 @@ $stmt->close();
         </form>
       </div>
     </div>
+<<<<<<< HEAD
+=======
+
+>>>>>>> 6872f7720a090bdd178b149007ec28b3c8d589db
   </div>
 
 </div>
 
+<<<<<<< HEAD
 <?php require_once __DIR__ . '/includes/footer.php'; ?>
+=======
+<?php require_once __DIR__ . '/includes/footer.php'; ?>
+>>>>>>> 6872f7720a090bdd178b149007ec28b3c8d589db

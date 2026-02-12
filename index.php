@@ -82,7 +82,11 @@ function excerpt_from_html(string $html, int $max = 180): string
 // Load welcome card settings
 $welcome = [
   'title' => 'Welcome',
+<<<<<<< HEAD
   'message' => "Ledger is an open-source support framework designed to bring conversations and knowledge together in one place.",
+=======
+  'message' => "If you’re trying to make sense of a planning decision, this community looks at how decisions are made — we focus on process, evidence, and how decisions are reached in practice. Our aim is to help you understand the process properly, and to raise concerns in an informed, procedurally sound way.",
+>>>>>>> 6872f7720a090bdd178b149007ec28b3c8d589db
   'accent_color' => '#000000',
 ];
 

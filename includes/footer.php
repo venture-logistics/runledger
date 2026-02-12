@@ -228,7 +228,11 @@ function SimpleUploadAdapterPlugin(editor) {
         const data = new FormData();
         data.append('upload', file);
 
+<<<<<<< HEAD
         const res = await fetch('/includes/upload_image.php', { method: 'POST', body: data });
+=======
+        const res = await fetch('/upload_image.php', { method: 'POST', body: data });
+>>>>>>> 6872f7720a090bdd178b149007ec28b3c8d589db
         const json = await res.json();
 
         if (!json || !json.url) throw new Error('Upload failed');
@@ -301,8 +305,12 @@ document.querySelectorAll('textarea[data-ckeditor="1"]').forEach((el) => {
                 'codeBlock',   // block code
                 '|',
                 'blockQuote', '|',
+<<<<<<< HEAD
                 'undo', 'redo', '|',
                 'insertImageViaUrl',
+=======
+                'undo', 'redo'
+>>>>>>> 6872f7720a090bdd178b149007ec28b3c8d589db
             ],
             
             
@@ -314,8 +322,11 @@ document.querySelectorAll('textarea[data-ckeditor="1"]').forEach((el) => {
     });
 });
 
+<<<<<<< HEAD
 
 
+=======
+>>>>>>> 6872f7720a090bdd178b149007ec28b3c8d589db
 </script>
 
 <dialog id="imgdlg" onclick="this.close()">
